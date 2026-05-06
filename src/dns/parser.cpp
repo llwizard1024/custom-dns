@@ -50,9 +50,9 @@ dns_question parse_question(const uint8_t* buffer, size_t& offset) {
     dns_question question;
 
     std::memcpy(&question.qtype, &buffer[offset], sizeof(question.qtype)); offset += 2;
-    question.qtype = htons(question.qtype);
+    question.qtype = ntohs(question.qtype);
     std::memcpy(&question.qclass, &buffer[offset], sizeof(question.qclass)); offset += 2;
-    question.qclass = htons(question.qclass);
+    question.qclass = ntohs(question.qclass);
 
     return question;
 }
