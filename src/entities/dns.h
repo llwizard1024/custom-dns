@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-struct dns_header {
+struct DnsHeader {
     uint16_t id;
     uint16_t flags;
     uint16_t qdcount;
@@ -11,7 +11,7 @@ struct dns_header {
     uint16_t arcount;
 };
 
-struct dns_question {
+struct DnsQuestion {
     uint16_t qtype;
     uint16_t qclass;
 };
