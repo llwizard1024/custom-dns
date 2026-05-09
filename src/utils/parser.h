@@ -14,3 +14,5 @@ size_t build_response(
     uint32_t ip_addr,
     uint8_t* response_buffer
 );
+
+uint16_t generate_dns_id();

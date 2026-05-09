@@ -8,6 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(dns_lib STATIC
     src/network/udp_socket.cpp
     src/utils/parser.cpp
+    src/dns/resolver.cpp
+    src/server/server.cpp
 )
 
 target_include_directories(dns_lib PUBLIC

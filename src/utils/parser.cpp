@@ -2,31 +2,50 @@
 
 std::string parse_dns_name(const uint8_t* buffer, size_t buffer_len, size_t& offset) {
     std::string result;
-    
-    if (offset >= buffer_len) {
-        return "";
-    }
+    bool jumped = false;
+    size_t jump_offset = 0;
+    size_t current = offset;
     
     while (true) {
-        int current_segment_length = buffer[offset];
+        if (current >= buffer_len) return "";
+            
+        uint8_t len = buffer[current];
         
-        if (current_segment_length == 0) {
-            offset++;
-            if (!result.empty()) result.pop_back(); // Delete dot
-            return result;
+        if ((len & 0xC0) == 0xC0) {
+            if (current + 1 >= buffer_len)
+                return "";
+            
+            uint16_t pointer = ((len & 0x3F) << 8) | buffer[current + 1];
+            if (pointer >= buffer_len)
+                return "";
+            
+            if (!jumped) {
+                jump_offset = current + 2;
+                jumped = true;
+            }
+            
+            current = pointer;
+            continue;
         }
         
-        offset++;
+        if (len == 0) {
+            ++current;
+            break;
+        }
+
+        ++current;
+        if (current + len > buffer_len) return "";
         
-        do {
-            result.push_back(buffer[offset]);
-            offset++;
-            current_segment_length--;
-        } while (current_segment_length != 0);
-        
-        
-        result.push_back('.');
+        result.append(reinterpret_cast<const char*>(&buffer[current]), len);
+        result += '.';
+        current += len;
     }
+    
+    if (!result.empty())
+        result.pop_back();
+
+    offset = jumped ? jump_offset : current;
+    return result;
 }
 
 size_t build_response(
