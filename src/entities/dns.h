@@ -21,4 +21,5 @@ struct PendingQuery {
     uint16_t query_id;
     struct sockaddr_in client_addr;
     socklen_t client_addr_len;
+    size_t question_len;
 };
