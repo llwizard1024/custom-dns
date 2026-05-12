@@ -21,6 +21,7 @@ struct epoll_event server_ev, client_ev, events[64];
 int main() {
     int server_fd = create_socket(DNS_PORT); 
     Resolver resolver;
+    resolver.load_blocklist("config/blocked_domains.txt");
 
     if (server_fd == -1 || resolver.get_client_fd() == -1) {
         return -1;
@@ -81,7 +82,18 @@ int main() {
                 
                 // Get data from server
                 size_t offset = 12;
-                parse_dns_name(server_buffer, sizeof(server_buffer), offset); offset += 4;
+                std::string domain_name = parse_dns_name(server_buffer, sizeof(server_buffer), offset); offset += 4;
+                
+                if (resolver.is_blocked(domain_name)) {
+                    DnsHeader header;
+                    std::memcpy(&header, server_buffer, 12);
+                    uint8_t response[DNS_BUFFER_SIZE];
+                    
+                    size_t response_len = build_response(server_buffer, header, offset, INADDR_ANY, response);
+                    sendto(server_fd, response, response_len, 0,(struct sockaddr*)&client_addr, addr_len);
+                    continue;
+                }
+                
                 resolver.send_query(server_buffer, offset, client_addr, addr_len);
                 continue;
             } else if (events[i].data.fd == resolver.get_client_fd()) {

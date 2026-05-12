@@ -6,6 +6,8 @@
 
 #include <optional>
 #include <random>
+#include <fstream>
+#include <algorithm>
 
 Resolver::Resolver() {
     client_fd_ = create_socket(0);
@@ -109,4 +111,22 @@ int Resolver::get_client_fd() const {
 
 void Resolver::remove_query(uint16_t id) {
     pending_.erase(id);
+}
+
+void Resolver::load_blocklist(const std::string& file_path) {
+    std::ifstream file(file_path);
+    
+    if (!file.is_open()) {
+        exit(-1);
+    }
+    
+    std::string str;
+    while (std::getline(file, str)) {
+        str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+        blocked_.insert(str);
+    }
+}
+
+bool Resolver::is_blocked(const std::string domain_name) {
+    return blocked_.find(domain_name) != blocked_.end();
 }
