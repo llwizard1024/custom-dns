@@ -74,30 +74,39 @@ std::optional<std::pair<uint32_t, PendingQuery>> Resolver::handle_response(const
     offset += 4; // QTYPE + QCLASS
 
     while (offset < static_cast<size_t>(response_len)) {
-        parse_dns_name(response_data, response_len, offset);
-
+        std::string domain_name = parse_dns_name(response_data, response_len, offset);
+        
         if (offset + 10 > static_cast<size_t>(response_len))
             break;
-
+        
         uint16_t type, rdlength;
         std::memcpy(&type, &response_data[offset], 2);
         type = ntohs(type);
         offset += 2;
         offset += 2; // class skip
-        offset += 4; // ttl skip
-
+        
+        uint32_t ttl;
+        std::memcpy(&ttl, &response_data[offset], 4);
+        ttl = ntohl(ttl);
+        offset += 4;
+        
         std::memcpy(&rdlength, &response_data[offset], 2);
         rdlength = ntohs(rdlength);
         offset += 2;
-
+        
         if (offset + rdlength > static_cast<size_t>(response_len)) break;
-
+        
         if (type == 1 && rdlength == 4) {
             uint32_t ip_addr;
             std::memcpy(&ip_addr, &response_data[offset], 4);
+            
+            // Сохраняем в кэш
+            std::string key = domain_name + "|" + std::to_string(type);
+            cache_[key] = { ip_addr, std::chrono::steady_clock::now() + std::chrono::seconds(ttl) };
+            
             return std::make_pair(ip_addr, it->second);
         }
-
+        
         offset += rdlength;
     }
 
@@ -129,4 +138,17 @@ void Resolver::load_blocklist(const std::string& file_path) {
 
 bool Resolver::is_blocked(const std::string domain_name) {
     return blocked_.find(domain_name) != blocked_.end();
+}
+
+std::optional<uint32_t> Resolver::lookup_cache(const std::string& domain, uint16_t qtype) {
+    std::string key = domain + "|" + std::to_string(qtype);
+    auto it = cache_.find(key);
+    if (it != cache_.end()) {
+        if (std::chrono::steady_clock::now() < it->second.expires_at) {
+            return it->second.ip_addr;
+        } else {
+            cache_.erase(it);
+        }
+    }
+    return std::nullopt;
 }

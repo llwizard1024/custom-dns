@@ -82,7 +82,22 @@ int main() {
                 
                 // Get data from server
                 size_t offset = 12;
-                std::string domain_name = parse_dns_name(server_buffer, sizeof(server_buffer), offset); offset += 4;
+                std::string domain_name = parse_dns_name(server_buffer, sizeof(server_buffer), offset);
+                
+                uint16_t qtype;
+                std::memcpy(&qtype, &server_buffer[offset], 2);
+                qtype = ntohs(qtype);
+                
+                offset += 4;
+                
+                if (auto cached_ip = resolver.lookup_cache(domain_name, qtype)) {
+                    uint8_t response[DNS_BUFFER_SIZE];
+                    DnsHeader header;
+                    std::memcpy(&header, server_buffer, 12);
+                    size_t response_len = build_response(server_buffer, header, offset, *cached_ip, response);
+                    sendto(server_fd, response, response_len, 0, (struct sockaddr*)&client_addr, addr_len);
+                    continue;
+                }
                 
                 if (resolver.is_blocked(domain_name)) {
                     DnsHeader header;

@@ -12,13 +12,19 @@
 #include <arpa/inet.h>
 #include <string>
 #include <unordered_set>
+#include <chrono>
 
+struct CachedEntry {
+    uint32_t ip_addr;
+    std::chrono::steady_clock::time_point expires_at;
+};
 
 class Resolver {
     int client_fd_;
     struct sockaddr_in upstream_;
     std::unordered_map<uint16_t, PendingQuery> pending_;
     std::unordered_set<std::string> blocked_;
+    std::unordered_map<std::string, CachedEntry> cache_;
 public:
     Resolver();
     ~Resolver() { if (client_fd_ != -1) close(client_fd_); }
@@ -29,6 +35,8 @@ public:
     
     void load_blocklist(const std::string& file_path);
     bool is_blocked(const std::string domain_name);
+    
+    std::optional<uint32_t> lookup_cache(const std::string& domain, uint16_t qtype);
     
     int get_client_fd() const;
 };
