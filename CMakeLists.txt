@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(custom-dns VERSION 0.0.1 LANGUAGES CXX)
+project(dns_resolver VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,7 +9,6 @@ add_library(dns_lib STATIC
     src/network/udp_socket.cpp
     src/utils/parser.cpp
     src/dns/resolver.cpp
-    src/server/server.cpp
 )
 
 target_include_directories(dns_lib PUBLIC
@@ -18,5 +17,5 @@ target_include_directories(dns_lib PUBLIC
 
 target_compile_options(dns_lib PRIVATE -Wall -Wextra -Wpedantic)
 
-add_executable(custom_dns src/main.cpp)
-target_link_libraries(custom_dns PRIVATE dns_lib)
+add_executable(dns_reolsver src/main.cpp)
+target_link_libraries(dns_reolsver PRIVATE dns_lib)
